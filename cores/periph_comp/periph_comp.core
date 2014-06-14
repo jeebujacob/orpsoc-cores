@@ -1,0 +1,16 @@
+CAPI=1
+[main]
+description = Peripheral to perform Hardware Acceleration
+
+simulators = icarus modelsim
+
+
+[verilog]
+src_files = model_evaluator.v
+
+[icarus]
+depend = vlog_tb_utils
+
+[modelsim]
+depend = vlog_tb_utils
+

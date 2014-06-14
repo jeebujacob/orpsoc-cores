@@ -1,0 +1,81 @@
+//This is the top file for the Compuational Peripheral
+// Author 		: Jeebu Jacob Thomas
+// Description		: This is a wishbone compliant FSM model for 32*32 bit block multiplication 
+// Sources		: periph_comp_top.v, mkOA.v, mkTranspose.v*/
+// Date 		: 03/05/2014
+module periph_comp_top
+(
+    //------ Input ports----------
+    input 	 wb_periph_clk_i,
+    input 	 wb_periph_rst_i,
+    input [31:0] wb_periph_adr_i,
+    input [31:0] wb_periph_dat_i,
+    input  [3:0] wb_periph_sel_i,
+    input        wb_periph_we_i,
+    input        wb_periph_cyc_i,
+    input        wb_periph_stb_i,
+    input  [2:0] wb_periph_cti_i,
+    input  [1:0] wb_periph_bte_i,
+    
+    //------Ouptut Ports--------//
+    output reg [31:0] wb_periph_dat_o,
+    output reg        wb_periph_ack_o,
+    output reg        wb_periph_err_o,
+    output reg        wb_periph_rty_o
+);
+  localparam depth 	= 2048;
+  localparam mem_words 	= $clog2(depth);
+  
+  
+  wire valid;
+  wire [10:0] periph_add ;
+  reg [31:0] mem [0:depth-1];
+  
+ 
+
+  assign  valid = wb_periph_cyc_i & wb_periph_stb_i;
+  assign periph_add = wb_periph_adr_i[10:0];
+  initial // Remove for board level implementation since initial blocks are not synthesizable in general 
+  begin
+  wb_periph_err_o <= 0;
+  wb_periph_rty_o <= 0;
+  wb_periph_dat_o <= 0;
+  wb_periph_ack_o <= 0;
+  
+  end
+
+   wire [31:0] wr_data; // Selecting the byte lines of the write data
+   assign wr_data[31:24] = wb_periph_sel_i[3] ? wb_periph_dat_i[31:24] : wb_periph_dat_o[31:24];
+   assign wr_data[23:16] = wb_periph_sel_i[2] ? wb_periph_dat_i[23:16] : wb_periph_dat_o[23:16];
+   assign wr_data[15: 8] = wb_periph_sel_i[1] ? wb_periph_dat_i[15: 8] : wb_periph_dat_o[15: 8];
+   assign wr_data[ 7: 0] = wb_periph_sel_i[0] ? wb_periph_dat_i[ 7: 0] : wb_periph_dat_o[ 7: 0];
+   
+   wire ram_we = wb_periph_we_i & wb_periph_ack_o;
+
+  
+  always @(posedge wb_periph_clk_i)
+  begin
+    if(wb_periph_rst_i)
+    begin 
+      wb_periph_dat_o <= 0;
+      wb_periph_ack_o <= 0;
+    end else
+    begin 
+    
+      wb_periph_ack_o <= valid & !(wb_periph_ack_o); 
+      wb_periph_dat_o <= mem[periph_add];
+	if(ram_we==1)
+	begin
+	  mem[periph_add] <= wr_data;
+	end 
+	
+    end	    
+    
+  end 
+     
+      
+   
+	  
+  endmodule     
+	
+    
